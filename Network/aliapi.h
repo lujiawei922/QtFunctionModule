@@ -17,9 +17,9 @@
 
 
 //AppKey
-const QString AppKey = "203722337";
+const QString AppKey = "*************";
 //AppSecret
-const QString AppSecret = "62r30qu7zlxq3h3vbmww4blml3g9bv5d";
+const QString AppSecret = "*******************";
 //API接口
 const QStringList ReqApi({"/weather/v1/getWeather","/live/v1/cctv1","/music/v1/search"});
 //请求方法
