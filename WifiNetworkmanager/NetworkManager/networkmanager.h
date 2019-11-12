@@ -1,0 +1,217 @@
+﻿#ifndef NETWORKMANAGER_H
+#define NETWORKMANAGER_H
+
+#include <QObject>
+#include <QTimer>
+#include <QList>
+#include <QThread>
+#include "networkmanager_global.h"
+
+#define pline() qDebug() << __FILE__ << __LINE__/*QString("%1").arg(__LINE__, 3, 10)*/ << __func__
+#ifdef __cplusplus
+extern "C" {
+#endif /* __cplusplus */
+
+enum
+{
+    ESSID_STATUS = 0,
+    ESSID_NAME,//SSID
+    ESSID_TYPE,
+    ESSID_ENCRYP,
+    ESSID_PASS,
+    ESSID_BSSID,
+    ESSID_FREQ,
+    ESSID_SIGNAL,
+    ESSID_FLAG,
+    ESSID_MAX,
+};
+
+
+#ifdef __cplusplus
+}
+#endif  /* __cplusplus */
+
+
+typedef struct Q_DECL_IMPORT tagWifi
+{
+    QString wifi[ESSID_MAX];
+
+    bool isValid();
+
+    /* only mips32 no use const, arm used
+     * 只有MIPS32不使用const，Arm32使用了。
+     */
+#ifdef __MIPS_LINUX__
+    tagWifi& operator= ( tagWifi& w );
+#else
+    tagWifi& operator= ( const tagWifi& w );
+#endif
+    QString& operator[] ( int index );
+    const QString& operator[] ( int index ) const;
+
+} TWifi;
+
+
+class Q_DECL_IMPORT NetWorkClearThread : public QThread
+{
+    Q_OBJECT
+public:
+    NetWorkClearThread ( QObject* parent = nullptr) : QThread ( parent ) {
+    }
+signals:
+    void cleared();
+    void notcleared();
+
+    // QThread interface
+protected:
+    void run();
+};
+
+class Q_DECL_IMPORT DHCPThread : public QThread
+{
+    Q_OBJECT
+public:
+    DHCPThread ( QObject* parent = nullptr ) : QThread ( parent ) {}
+    void setnet ( QString eth = "eth0" ) {net = eth;}
+signals:
+    void passed ( QString );
+    // QThread interface
+protected:
+    void run();
+private:
+    QString net;
+};
+
+// thread unsafe
+
+/**
+ * @brief The QQtEthenetManager class
+ * 原理：
+ * S1:系统启动，调用init_net.sh
+ * S2:系统运行，用户通过页面设置WiFi或者有线的IP等，或者设置为自动获取。
+ *      保存IP到配置文件，启动时显示到用户页面上
+ *      保存IP等到init_net.sh，系统启动时，网络连接状态正常。
+ *      保存WiFi设置等到/etc/wpa_supplicant.conf
+ * S3:用户插拔网线，WiFi自动切换为有线。
+ * S4:用户重启系统，进入S1.
+ *
+ * 使用说明：
+ * 调用QQtEthnetManager::Instance(parent)，并且连接相应的WiFi信号和用户的槽
+ * 通过wifiList()，显示给用户看WiFi列表。每5s自动更新一次。在槽当中调用并更新界面
+ * 通过setCurrentWiFi()更换用户连接的WiFi。用户点击更改输入密码了，就调这个保存。会自动配置WiFi和根据用户IP或者DHCP重来连接新WiFi。
+ *
+ *
+ */
+
+class Q_DECL_IMPORT NetworkManager : public QObject
+{
+    Q_OBJECT
+public:
+    static NetworkManager* Instance ( QObject* parent = nullptr );
+    QList<TWifi>& wifiList() { return m_wifiList; }
+    inline TWifi currentWifi() { return m_curWifi; }
+    bool setCurrentWifi ( QString bssid_mac, QString password = "" );
+    void setRefresh ( bool ref = true ) { ref ? m_workTimer->start ( 5000 ) : m_workTimer->stop(); }
+    void setDHCP ( bool bUse = false ) { m_bUseDHCP = bUse; }
+    void setAddr ( QString ip, QString mask, QString gw, QString dns );
+    void getAddr ( QString& ip, QString& mask, QString& gw, QString& dns );
+    /**
+         * @brief configIPAddress
+         * wpa_suplicant.conf
+         * init_net.sh
+         * ipaddr.conf
+         */
+    void ipconfig();
+    QString currentNetName();
+    QTimer* workTimer() { return m_workTimer; }
+
+signals:
+    /*
+     * 没有配置就会发送这个信号
+     */
+    void sigScanning();
+    /*
+     * 断开连接的状态
+     */
+    void sigDisConnected();
+    /*
+     * 正在连接的状态
+     */
+    void sigConnecting();
+    /*
+     * 连接成功的状态
+     */
+    void sigConnected();
+    /*
+     * Wifi列表更新 之上状态改变会影响list中wifi的标志位。
+     */
+    void sigRefreshed();
+    /*
+     * Wifi状态改变
+     */
+    void sigStatusChanged ( QString status );
+    /*
+     * 有线连接上
+     */
+    void sigLanConnected();
+    /*
+     * 有线断开
+     */
+    void sigLanDisConnected();
+    /*
+     * 网络线路连接上
+     */
+    void sigNetworkClear();
+    /*
+     * 网络线路断开
+     */
+    void sigNetworkNotClear();
+
+private slots:
+    /**
+     * @brief refreshWifiList 刷新wifi热点列表
+     */
+    void refreshWifiList();
+    /**
+     * @brief refreshWifiStatus 刷新wifi连接状态
+     */
+    void refreshWifiStatus();
+    /**
+     * @brief checkLanConnection 检查有线链接状态
+     */
+    void checkLanConnection();
+    /**
+     * @brief DhcpPassed 通过Dhcp协议获取IP地址等网络参数
+     * @param netname 设备名
+     */
+    void DhcpPassed ( QString netname );
+    /**
+     * @brief checkNetworkClear 用于测试网络是否连接正常
+     */
+    void checkNetworkClear();
+
+private:
+    explicit NetworkManager ( QObject* parent = nullptr );
+    void readStatus();
+    void restoreWifi();
+    bool restartWifi();
+    void saveScript();
+    void config();
+
+signals:
+
+public slots:
+private:
+    static NetworkManager* instance;
+    QTimer* m_workTimer;
+    QList<TWifi> m_wifiList;
+    TWifi m_curWifi;
+    bool m_bUseDHCP;
+    QString m_netName;
+    DHCPThread* m_thread;
+    NetWorkClearThread* m_clearThread;
+    QString m_status;
+
+};
+
+#endif // NETWORKMANAGER_H
