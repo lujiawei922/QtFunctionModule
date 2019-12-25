@@ -1,0 +1,22 @@
+<RCC>
+    <qresource prefix="/">
+        <file>main.qml</file>
+        <file>Classical/Classical.qml</file>
+        <file>Classical/Sysbolwarning/Sysbolwarning.qml</file>
+        <file>Classical/SpeedAndRpm/Rpm.qml</file>
+        <file>Classical/SpeedAndRpm/DynamicImageSelector.qml</file>
+        <file>Classical/SpeedAndRpm/RpmNumUpAndBright.qml</file>
+        <file>Classical/Capacity/Capacity.qml</file>
+        <file>Classical/Capacity/NumUpAndBright.qml</file>
+        <file>Classical/Capacity/EF.qml</file>
+        <file>Common/BaseInfo.qml</file>
+        <file>Classical/Gear/GearText.qml</file>
+        <file>Classical/SwipeMenu/SwipeMenu.qml</file>
+        <file>Classical/SwipeMenu/module/MenuIcon.qml</file>
+        <file>Classical/SwipeMenu/module/Navigation.qml</file>
+        <file>Classical/SwipeMenu/module/MusicModel2.qml</file>
+        <file>Classical/SwipeMenu/module/Phone.qml</file>
+        <file>Classical/SwipeMenu/module/Setting.qml</file>
+        <file>Classical/SwipeMenu/module/CarWaring.qml</file>
+    </qresource>
+</RCC>
